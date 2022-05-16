@@ -129,10 +129,10 @@ export const differenceWith = <T>(
   isEqual: (a: T, b: T) => boolean = (a, b) => a === b,
 ): T[] => {
   const result: T[] = [];
-  for (const targetVal of targetArr) {
-    const isMatch = baseArr.some((baseVal) => isEqual(targetVal, baseVal));
+  for (const baseVal of baseArr) {
+    const isMatch = targetArr.some((targetVal) => isEqual(targetVal, baseVal));
     if (!isMatch) {
-      result.push(targetVal);
+      result.push(baseVal);
     }
   }
   return result;
@@ -168,7 +168,7 @@ export const isPlainObjectEqual = (obj1: Obj, obj2: Obj) => {
         return false;
       }
       return keys1.every((val, i) => {
-        return compare(val, keys2[i]);
+        return compare(o1[val], o2[keys2[i]]);
       });
     } else if (!isPlainObject(o1) && !isPlainObject(o2)) {
       return o1 === o2;
@@ -177,4 +177,18 @@ export const isPlainObjectEqual = (obj1: Obj, obj2: Obj) => {
     }
   };
   return compare(obj1, obj2);
+};
+
+export const mergeObject = (object: Obj, source: Obj): Obj => {
+  const merge = (o1: unknown, o2: unknown) => {
+    if (isObject(o1) && isObject(o2)) {
+      Object.keys(o2).map((key) => {
+        o1[key] = merge(o1[key], o2[key]);
+      });
+      return o1;
+    } else {
+      return o2;
+    }
+  };
+  return merge(object, source) as Obj;
 };

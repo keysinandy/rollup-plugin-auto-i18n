@@ -2,7 +2,6 @@ import path from 'path';
 import typescript from '@rollup/plugin-typescript';
 import pkg from './package.json';
 import { babel } from '@rollup/plugin-babel';
-import nodeResolve from '@rollup/plugin-node-resolve';
 import commonjs from '@rollup/plugin-commonjs';
 import json from '@rollup/plugin-json';
 
@@ -28,20 +27,8 @@ module.exports = [
         file: pkg.module,
         format: 'es',
       },
-      {
-        file: './dist/umd/index.js',
-        format: 'umd',
-        name: pkg.name,
-      },
     ],
-    plugins: [
-      json(),
-      // nodeResolve({
-      //   browser: false,
-      // }),
-      typescript({ include: 'src/**/*.{ts,js}', module: 'esnext' }),
-      commonjs(),
-      babel(babelOptions),
-    ],
+    plugins: [json(), typescript({ include: 'src/**/*.{ts,js}', module: 'esnext' }), commonjs(), babel(babelOptions)],
+    external: Object.keys(pkg.dependencies),
   },
 ];

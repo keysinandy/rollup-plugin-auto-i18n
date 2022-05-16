@@ -14,6 +14,7 @@ import {
   differenceWith,
   deleteObjPath,
   isPlainObjectEqual,
+  mergeObject,
 } from './utils';
 
 let zhSource: nsWord = {};
@@ -65,7 +66,6 @@ function sortObject(unordered: Obj) {
 function customFlush(this: any, done: () => void) {
   const { resStore } = this.parser;
   const { resource, removeUnusedKeys, sort, defaultValue } = this.parser.options;
-
   for (let index = 0; index < Object.keys(resStore).length; index++) {
     const lng = Object.keys(resStore)[index];
     const namespaces = resStore[lng]; // 所有被抠出来的英文key，对应的都是__not_translated，需要跟后面的source合并
@@ -96,9 +96,8 @@ function customFlush(this: any, done: () => void) {
       }
       oldContent = omitEmptyObject(oldContent);
     }
-    console.log(namespaces, oldContent, 'namespaces oldContent');
     // 合并旧的内容
-    let output = Object.assign({}, namespaces, oldContent);
+    let output = mergeObject(namespaces, oldContent);
     if (sort) {
       output = sortObject(output);
     }
@@ -164,8 +163,6 @@ function customTransform(
   done();
 }
 
-const FILE_EXTENSION = '/**/*.{js,jsx,ts,tsx}';
-
 interface LocaleOPtions {
   localePath: string;
   ns: string[];
@@ -173,12 +170,20 @@ interface LocaleOPtions {
   defaultLng: language;
   defaultNs: string;
   customProps: Obj;
+  scannerPath: string[];
 }
 
 export const writeLocale = async (translatedSource: nsWord, sourceMap: nsMap, options: LocaleOPtions) => {
-  const { localePath: sourcePath, ns, callTarget: tv, customProps, defaultLng: dl, defaultNs: dn } = options;
+  const {
+    localePath: sourcePath,
+    ns,
+    callTarget: tv,
+    customProps,
+    defaultLng: dl,
+    defaultNs: dn,
+    scannerPath: paths,
+  } = options;
   targetVariable = tv;
-  const paths = [`${process.cwd()}${FILE_EXTENSION}`];
 
   zhSource = translatedSource || {};
   localePath = sourcePath || '';

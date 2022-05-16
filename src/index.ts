@@ -17,10 +17,10 @@ export interface Options {
   defaultLng?: language;
   lowerCaseFirstLetter?: boolean;
   customProps?: Obj;
+  scannerPath: string[];
 }
 function autoI18n(options: Options): Plugin {
   const { include, exclude, extensions = ['.js', '.ts', '.jsx', '.tsx'] } = options;
-
   const filter = createFilter(include, exclude);
   return {
     name: 'rollup-plugin-auto-i18n',

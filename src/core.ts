@@ -30,7 +30,7 @@ const registerEvent = () => {
   });
 };
 registerEvent();
-
+const paths = [`${process.cwd()}${'/**/*.{js,jsx,ts,tsx}'}`];
 const ZH_PROPERTY_NAME = 's';
 let translateTimeout = 5000;
 let ns: string[] = ['default'];
@@ -42,7 +42,8 @@ let tid: NodeJS.Timeout;
 let apiKey = '';
 let lowerCaseFirstLetter = true;
 let localePath: string;
-const customProps = {};
+let customProps = {};
+let scannerPath = paths;
 
 const travelPlugin: PluginItem = {
   visitor: {
@@ -70,12 +71,11 @@ const travelPlugin: PluginItem = {
           const ns = params[1] || defaultNs;
           const nsResources = nsSourceMap[ns] || {};
           const enWord = nsResources[zhWord];
-          // console.log(nsSourceMap, ns, nsResources, 'nsResources', zhWord);
           if (enWord) {
-            const nsWordValue = defaultLng === 'en' ? enWord : zhWord;
-            // if (ns !== defaultNs) {
-            //   nsWordValue = `${ns}:${defaultLng === 'en' ? enWord : zhWord}`;
-            // }
+            let nsWordValue = defaultLng === 'en' ? enWord : zhWord;
+            if (ns !== defaultNs) {
+              nsWordValue = `${ns}:${defaultLng === 'en' ? enWord : zhWord}`;
+            }
             const newNode = t.cloneNode(node);
             if (t.isMemberExpression(newNode.callee) && t.isIdentifier(newNode.callee.property)) {
               newNode.callee.property.name = 't';
@@ -90,6 +90,7 @@ const travelPlugin: PluginItem = {
           } else {
             // 开发模式下，通知轮询器准备翻译
             const fileName = state.filename;
+            log('requireTranslate', zhWord);
             eventHub.emit('requireTranslate', { zhWord, ns, fileName });
           }
         }
@@ -145,7 +146,6 @@ const doTranslate = async (waitingTranslateList: WaitingTranslate[]) => {
       }
       translatedWords[zh] = enWord;
     });
-  console.log(translatedWords, 'translatedWords');
   return translatedWords;
 };
 const translateCall = async (word: string) => {
@@ -182,7 +182,6 @@ const filterInvalidWord = (enWord: string) => {
 };
 
 const translateFile = async () => {
-  log(fileList, waitingTranslatePool, 'waitingTranslatePool');
   if (fileList.length > 0 && waitingTranslatePool.length > 0) {
     log('开始翻译...');
     const fileListCp = [...fileList];
@@ -199,6 +198,7 @@ const translateFile = async () => {
         customProps,
         defaultLng,
         defaultNs,
+        scannerPath,
       });
       // 如果是删除了某个i18n.s 需要删除locale文件
       // 这里性能考虑暂时不去删除locale文件中不需要翻译，当下次有新的词需要翻译的时候就会自动删除
@@ -233,7 +233,9 @@ export const transformCode = async (code: string, options: Options, fileName: st
   options.timeout && (translateTimeout = options.timeout);
   nsSourceMap = prepareLocaleSource(localePath, defaultLng);
   options?.callTarget && (callTarget = options?.callTarget);
+  options?.customProps && (customProps = options?.customProps);
   apiKey = options.apiKey;
+  options?.scannerPath && (scannerPath = options.scannerPath);
   typeof options.lowerCaseFirstLetter === 'boolean' && (lowerCaseFirstLetter = options.lowerCaseFirstLetter);
   const result = await transformAsync(code, {
     plugins: [travelPlugin],
